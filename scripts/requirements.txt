@@ -1,0 +1,3 @@
+boto3
+# サーバーレスモデルカスタマイズ（SFTTrainer / ModelBuilder）は SageMaker Python SDK V3 を使用
+sagemaker>=3
