@@ -16,15 +16,16 @@ SageMaker Python SDK V3 の SFTTrainer を使い、インフラのプロビジ�
 ※ 引数名・データセット登録方法は SDK バージョンにより変わるため、実行前に上記を確認すること。
 """
 import argparse
+import os
 
 import boto3
-import sagemaker
 from sagemaker.train.common import TrainingType
 from sagemaker.train.sft_trainer import SFTTrainer
 
 PROJECT_NAME = "sagemaker-serverless-fft-markdown-table"
-# サーバーレスモデルカスタマイズ対応の JumpStart モデル ID（前記事と同じ Llama 3.2 1B）
-MODEL_ID = "meta-textgeneration-llama-3-2-1b-instruct"
+# サーバーレスモデルカスタマイズで FULL(FFT) レシピを持つ小型モデル
+# ※ 前記事の Llama 3.2 1B Instruct は LoRA レシピのみで FULL 非対応のため、Qwen3 1.7B を使用
+MODEL_ID = "huggingface-reasoning-qwen3-1-7b"
 
 
 def main() -> None:
@@ -41,8 +42,10 @@ def main() -> None:
     role = f"arn:aws:iam::{account}:role/{PROJECT_NAME}-sagemaker-execution-role"
 
     # chat 形式（messages）の jsonl を S3 へアップロード
-    session = sagemaker.Session()
-    train_s3 = session.upload_data(args.train_file, bucket=bucket, key_prefix="data")
+    # （SDK V3 には sagemaker.Session が無いため boto3 でアップロードする）
+    key = f"data/{os.path.basename(args.train_file)}"
+    boto3.client("s3").upload_file(args.train_file, bucket, key)
+    train_s3 = f"s3://{bucket}/{key}"
     print(f"train data: {train_s3}")
 
     training_type = TrainingType.FULL if args.method == "full" else TrainingType.LORA
@@ -55,6 +58,8 @@ def main() -> None:
         role=role,
         accept_eula=True,
         base_job_name=PROJECT_NAME,
+        # サーバーレス（compute 未指定）では、学習済みモデルの登録先として必須（CDK で作成済み）
+        model_package_group=f"{PROJECT_NAME}-model-package-group",
     )
     trainer.hyperparameters.max_epochs = args.epochs
 

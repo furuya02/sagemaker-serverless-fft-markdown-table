@@ -1,6 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as sagemaker from 'aws-cdk-lib/aws-sagemaker';
 import { Construct } from 'constructs';
 
 const PROJECT_NAME = 'sagemaker-serverless-fft-markdown-table';
@@ -58,11 +59,50 @@ export class SagemakerServerlessFftMarkdownTableStack extends cdk.Stack {
             ],
             resources: ['*'],
           }),
+          // SageMaker Python SDK V3 がロール検証で要求する EC2 ネットワーク権限
+          new iam.PolicyStatement({
+            actions: [
+              'ec2:CreateNetworkInterface',
+              'ec2:CreateNetworkInterfacePermission',
+              'ec2:DeleteNetworkInterface',
+              'ec2:DeleteNetworkInterfacePermission',
+              'ec2:DescribeDhcpOptions',
+              'ec2:DescribeNetworkInterfaces',
+              'ec2:DescribeSecurityGroups',
+              'ec2:DescribeSubnets',
+              'ec2:DescribeVpcs',
+            ],
+            resources: ['*'],
+          }),
+          // ベースモデル（SageMakerPublicHub）の参照と、学習済みモデルのパッケージ登録
+          new iam.PolicyStatement({
+            actions: [
+              'sagemaker:DescribeHub',
+              'sagemaker:DescribeHubContent',
+              'sagemaker:ListHubs',
+              'sagemaker:ListHubContents',
+              'sagemaker:CreateModelPackage',
+              'sagemaker:DescribeModelPackage',
+              'sagemaker:DescribeModelPackageGroup',
+              'sagemaker:ListModelPackages',
+              'sagemaker:UpdateModelPackage',
+              'sagemaker:AddTags',
+            ],
+            resources: ['*'],
+          }),
         ],
       }),
     );
 
+    // カスタマイズ済みモデルの登録先（サーバーレスカスタマイズでは必須）
+    const modelPackageGroup = new sagemaker.CfnModelPackageGroup(this, 'ModelPackageGroup', {
+      modelPackageGroupName: `${PROJECT_NAME}-model-package-group`,
+    });
+
     new cdk.CfnOutput(this, 'BucketName', { value: bucket.bucketName });
     new cdk.CfnOutput(this, 'SageMakerExecutionRoleArn', { value: role.roleArn });
+    new cdk.CfnOutput(this, 'ModelPackageGroupName', {
+      value: modelPackageGroup.modelPackageGroupName,
+    });
   }
 }
