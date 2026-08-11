@@ -9,6 +9,14 @@ Amazon SageMaker AI のサーバーレスモデルカスタマイズ（フルフ
 - 前記事（Training Job + LoRA）: https://dev.classmethod.jp/articles/llama-3-2-1b-lora-markdown-table-sagemaker/
 - サーバーレス フルファインチューニングの発表: https://aws.amazon.com/jp/about-aws/whats-new/2026/08/amazon-sagemaker-fft/
 
+## 構成
+
+![構成図](images/architecture.png)
+
+学習ジョブは S3 の学習データを読み込み、モデル成果物を S3 に出力したうえで Model Package Group にモデルパッケージを登録します。デプロイ時はそのモデルパッケージを参照してモデル成果物をロードします。エンドポイントは評価後に削除するため、常時課金されるリソースは残りません。
+
+（図のソース: [images/architecture.drawio](images/architecture.drawio)）
+
 ## 前提条件
 
 - SageMaker Python SDK V3（`sagemaker>=3`）が利用できること

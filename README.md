@@ -9,6 +9,14 @@ Note: whether a model supports FULL (full fine-tuning) is determined by its reci
 - Previous article (Training Job + LoRA): https://dev.classmethod.jp/articles/llama-3-2-1b-lora-markdown-table-sagemaker/
 - Serverless full fine-tuning announcement: https://aws.amazon.com/about-aws/whats-new/2026/08/amazon-sagemaker-fft/
 
+## Architecture
+
+![architecture](images/architecture.png)
+
+The customization job reads the training data from S3, writes the model artifacts back to S3, and registers a model package in the Model Package Group. At deployment time, the endpoint loads the model artifacts by resolving that model package. The endpoint is deleted right after evaluation, so no always-on billable resources remain.
+
+(Diagram source: [images/architecture.drawio](images/architecture.drawio). The labels are in Japanese, as the diagram comes from the accompanying blog post.)
+
 ## Prerequisites
 
 - SageMaker Python SDK V3 (`sagemaker>=3`)
